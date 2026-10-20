@@ -1,0 +1,145 @@
+---
+import Base from '../../layouts/Base.astro';
+import Icon from '../../components/Icon.astro';
+import { EMERGENCY_NUMBERS, CURRENCIES, DEFAULT_CURRENCY } from '../../data/site';
+import { PHRASES } from '../../data/phrases';
+import { t, langInfo, langPaths, type Lang } from '../../i18n';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.params.lang as Lang;
+const d = t(lang);
+const e = d.essentials;
+const cfg = { locale: langInfo(lang).locale, offline: e.ratesOffline, updated: e.updated };
+---
+<Base lang={lang} path="/essentials/" title={d.nav.essentials} description={e.metaDescription}>
+  <div class="wrap narrow">
+    <div class="article-head">
+      <div class="eyebrow">{e.eyebrow}</div>
+      <h1>{e.title}</h1>
+      <p class="muted">{e.lead}</p>
+    </div>
+
+    <section class="block" id="sos" style="padding-block:16px">
+      <h2 style="margin-bottom:12px">{e.sosTitle}</h2>
+      <div class="call-list">
+        {EMERGENCY_NUMBERS.map((n, i) => <a class="call" href={`tel:${n}`}><span><b>{d.emergency[i].label}</b><small>{d.emergency[i].note}</small></span><span class="num">{n}</span></a>)}
+      </div>
+    </section>
+
+    <section class="block" id="converter" style="padding-block:24px">
+      <div class="tool">
+        <h2>{e.converterTitle}</h2>
+        <div class="conv">
+          <div class="field"><label for="conv-amt">{e.amount}</label><input id="conv-amt" type="text" inputmode="decimal" value="100" autocomplete="off" /></div>
+          <div class="field"><label for="conv-cur">{e.currency}</label>
+            <select id="conv-cur">{CURRENCIES.map((c) => <option value={c} selected={c === DEFAULT_CURRENCY[lang]}>{c}</option>)}</select>
+          </div>
+        </div>
+        <div><div class="conv-out" id="conv-out" aria-live="polite">–</div><div class="meta" id="conv-rev"></div></div>
+        <p class="meta"><a href="https://www.exchangerate-api.com" rel="noopener">Rates by Exchange Rate API</a>. {e.rateCredit}</p>
+      </div>
+    </section>
+
+    <section class="block" id="driver" style="padding-block:24px">
+      <div class="tool">
+        <h2>{e.driverTitle}</h2>
+        <p class="muted">{e.driverHelp}</p>
+        <div class="field"><label for="drv-addr">{e.driverLabel}</label><textarea id="drv-addr" lang="th" placeholder="เช่น โรงแรม... ถนน... เขต..."></textarea></div>
+        <label style="display:flex;gap:10px;align-items:center;font-weight:500"><input id="drv-meter" type="checkbox" style="width:22px;min-height:22px" checked /> {e.driverMeter}</label>
+        <button class="btn" type="button" id="drv-show">{e.driverShow}</button>
+      </div>
+      <div class="driver-screen" id="drv-screen" hidden role="dialog" aria-modal="true" aria-label={e.driverTitle}>
+        <div class="lbl" lang="th">กรุณาไปส่งที่</div>
+        <div class="addr" lang="th" id="drv-text"></div>
+        <div class="lbl" lang="th" id="drv-meter-txt">กรุณาเปิดมิเตอร์ด้วยครับ/ค่ะ</div>
+        <button type="button" id="drv-close">{d.nav.close} · ปิด</button>
+      </div>
+    </section>
+
+    <section class="block" id="phrases" style="padding-block:24px 48px">
+      <h2 style="margin-bottom:6px">{e.phrasesTitle}</h2>
+      <p class="muted" style="margin-bottom:14px">{e.phrasesHelp}</p>
+      <div class="phrases">
+        {PHRASES.map((p, i) => (
+          <div class="phrase">
+            <span class="th" lang="th">{p.th}</span>
+            <span class="say">{p.say}</span>
+            <span class="en">{d.phrases[i]}</span>
+            <button class="play" type="button" data-speak={p.speak} aria-label={`${e.play}: ${d.phrases[i]}`}><Icon name="play" size={18} /></button>
+          </div>
+        ))}
+      </div>
+      <p class="meta" id="tts-note" hidden>{e.noVoice}</p>
+    </section>
+  </div>
+
+  <script is:inline define:vars={{ cfg }}>
+    // Converter
+    const amt = document.getElementById('conv-amt');
+    const cur = document.getElementById('conv-cur');
+    const out = document.getElementById('conv-out');
+    const rev = document.getElementById('conv-rev');
+    let rates = null;
+    let updated = '';
+    const fmt = (n) => n.toLocaleString(cfg.locale, { maximumFractionDigits: 2 });
+    function render() {
+      if (!rates) return;
+      const a = parseFloat(amt.value.replace(/[\s,]/g, '')) || 0;
+      const perUnit = 1 / rates[cur.value];
+      out.textContent = `${fmt(a)} ${cur.value} = ฿ ${fmt(a * perUnit)}`;
+      rev.textContent = `1 ${cur.value} = ฿ ${fmt(perUnit)} · ฿ 100 = ${fmt(100 / perUnit)} ${cur.value}${updated ? ' · ' + cfg.updated + ' ' + updated : ''}`;
+    }
+    async function loadRates() {
+      try {
+        const c = JSON.parse(localStorage.getItem('aat-fx-thb') || 'null');
+        if (c) { rates = c.rates; updated = new Date(c.u).toLocaleDateString(cfg.locale, { day: 'numeric', month: 'short' }); render(); if (Date.now() - c.t < 3600000) return; }
+      } catch (e) {}
+      try {
+        const r = await fetch('https://open.er-api.com/v6/latest/THB');
+        const d = await r.json();
+        rates = d.rates;
+        const u = d.time_last_update_unix * 1000;
+        updated = new Date(u).toLocaleDateString(cfg.locale, { day: 'numeric', month: 'short' });
+        try { localStorage.setItem('aat-fx-thb', JSON.stringify({ t: Date.now(), u, rates })); } catch (e) {}
+        render();
+      } catch (e) {
+        if (!rates) out.textContent = cfg.offline;
+      }
+    }
+    amt.addEventListener('input', render);
+    cur.addEventListener('change', render);
+    loadRates();
+
+    // Show to driver
+    const addr = document.getElementById('drv-addr');
+    const screen = document.getElementById('drv-screen');
+    const meter = document.getElementById('drv-meter');
+    try { addr.value = localStorage.getItem('aat-driver-addr') || ''; } catch (e) {}
+    addr.addEventListener('input', () => { try { localStorage.setItem('aat-driver-addr', addr.value); } catch (e) {} });
+    let lock = null;
+    document.getElementById('drv-show').addEventListener('click', async () => {
+      if (!addr.value.trim()) { addr.focus(); return; }
+      document.getElementById('drv-text').textContent = addr.value.trim();
+      document.getElementById('drv-meter-txt').hidden = !meter.checked;
+      screen.hidden = false;
+      try { await document.documentElement.requestFullscreen?.(); } catch (e) {}
+      try { lock = await navigator.wakeLock?.request('screen'); } catch (e) {}
+    });
+    document.getElementById('drv-close').addEventListener('click', async () => {
+      screen.hidden = true;
+      try { if (document.fullscreenElement) await document.exitFullscreen(); } catch (e) {}
+      try { await lock?.release(); } catch (e) {}
+    });
+
+    // Phrases audio
+    const synth = window.speechSynthesis;
+    document.querySelectorAll('[data-speak]').forEach((b) => b.addEventListener('click', () => {
+      if (!synth) return;
+      const voice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith('th'));
+      if (!voice) document.getElementById('tts-note').hidden = false;
+      const u = new SpeechSynthesisUtterance(b.dataset.speak);
+      u.lang = 'th-TH'; u.rate = 0.85; if (voice) u.voice = voice;
+      synth.cancel(); synth.speak(u);
+    }));
+  </script>
+</Base>

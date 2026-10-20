@@ -1,0 +1,34 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { REGION_SLUGS, REGION_THAI, type RegionSlug } from '../../../data/regions';
+import { t, href, LANG_CODES, type Lang } from '../../../i18n';
+
+export function getStaticPaths() {
+  return LANG_CODES.flatMap((lang) => REGION_SLUGS.map((region) => ({ params: { lang, region } })));
+}
+const lang = Astro.params.lang as Lang;
+const slug = Astro.params.region as RegionSlug;
+const d = t(lang);
+const r = d.regions.list[slug];
+---
+<Base lang={lang} path={`/visit/${slug}/`} title={r.name} description={r.intro}>
+  <article class="wrap narrow">
+    <div class="article-head">
+      <a class="crumb" href={href(lang, '/visit/')} data-pagefind-ignore>{d.regions.all}</a>
+      <h1>{r.name}</h1>
+      <span class="muted" lang="th">{REGION_THAI[slug]}</span>
+      <p>{r.intro}</p>
+    </div>
+    <dl class="tldr">
+      <div><dt>{d.regions.bestTime}</dt><dd>{r.bestTime}</dd></div>
+      <div><dt>{d.regions.gettingThere}</dt><dd>{r.gateways}</dd></div>
+    </dl>
+    <div class="prose">
+      <h2>{d.regions.whereToGo}</h2>
+      <ul>{r.places.map((p) => <li><b>{p.name}:</b> {p.why}</li>)}</ul>
+      <h2>{d.regions.goodToKnow}</h2>
+      <ul>{r.tips.map((tip) => <li>{tip}</li>)}</ul>
+      <p>{d.regions.beforeYouGo} <a href={href(lang, '/guides/etiquette-and-laws/')}>{d.paths.culture.title}</a> · <a href={href(lang, '/calendar/')}>{d.footer.holidays}</a></p>
+    </div>
+  </article>
+</Base>

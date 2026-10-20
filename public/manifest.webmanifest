@@ -5,15 +5,15 @@
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f6f5fb",
-  "theme_color": "#262062",
+  "background_color": "#0a2c58",
+  "theme_color": "#0a2c58",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
-    { "name": "Emergency numbers", "url": "/essentials/#sos" },
-    { "name": "Show to driver", "url": "/essentials/#driver" }
+    { "name": "Emergency numbers", "url": "/en/essentials/#sos" },
+    { "name": "Show to driver", "url": "/en/essentials/#driver" }
   ]
 }

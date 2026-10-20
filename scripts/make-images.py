@@ -1,45 +1,94 @@
-"""Regenerates the PWA icons and the default social share image in public/."""
-import sys
-from PIL import Image, ImageDraw, ImageFont
+"""Builds the web logo, PWA icons, favicon and share image from the brand files.
 
-out = sys.argv[1] if len(sys.argv) > 1 else "public"
-INDIGO = (38, 32, 98)
-SAFFRON = (227, 155, 23)
-LIGHT = (241, 239, 255)
+Usage: python scripts/make-images.py
+Sources: brand/logo-mark-source.webp (round mark) and brand/logo-full-source.webp (mark + wordmark).
+"""
+from PIL import Image, ImageDraw, ImageChops
 
-
-def icon(size):
-    img = Image.new("RGB", (size, size), INDIGO)
-    d = ImageDraw.Draw(img)
-    c, r1, r2 = size / 2, size * 0.36, size * 0.2
-    d.ellipse([c - r1, c - r1, c + r1, c + r1], fill=LIGHT)
-    d.ellipse([c - r2, c - r2, c + r2, c + r2], fill=SAFFRON)
-    img.save(f"{out}/icon-{size}.png")
+OUT = "public"
+NAVY = (11, 43, 89)
 
 
-def font(size, bold=False):
-    for name in (["segoeuib.ttf", "arialbd.ttf"] if bold else ["segoeui.ttf", "arial.ttf"]):
-        try:
-            return ImageFont.truetype(f"C:/Windows/Fonts/{name}", size)
-        except OSError:
-            continue
-    return ImageFont.load_default()
+def nonwhite_bbox(img, region=None, threshold=235):
+    src = img.crop(region) if region else img
+    gray = src.convert("L").point(lambda v: 255 if v < threshold else 0)
+    box = gray.getbbox()
+    if region and box:
+        box = (box[0] + region[0], box[1] + region[1], box[2] + region[0], box[3] + region[1])
+    return box
 
 
-def og():
-    img = Image.new("RGB", (1200, 630), INDIGO)
-    d = ImageDraw.Draw(img)
-    for x in range(0, 1200, 36):
-        d.rectangle([x + 18, 560, x + 36, 630], fill=(50, 43, 122))
-    d.ellipse([80, 80, 160, 160], fill=LIGHT)
-    d.ellipse([102, 102, 138, 138], fill=SAFFRON)
-    d.text((190, 92), "All About Thailand", font=font(52, True), fill=LIGHT)
-    d.text((80, 230), "Thailand, explained before you", font=font(64, True), fill=LIGHT)
-    d.text((80, 310), "land and after you stay.", font=font(64, True), fill=SAFFRON)
-    d.text((80, 430), "Visas · Money · Safety · Culture · News for foreigners", font=font(34), fill=LIGHT)
-    img.save(f"{out}/og-default.png", optimize=True)
+def circle_mark(src):
+    """Crop the round mark and make everything outside the circle transparent."""
+    box = nonwhite_bbox(src)
+    mark = src.crop(box).convert("RGBA")
+    size = max(mark.size)
+    sq = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    sq.paste(mark, ((size - mark.width) // 2, (size - mark.height) // 2))
+    big = size * 4
+    mask = Image.new("L", (big, big), 0)
+    inset = int(big * 0.012)
+    ImageDraw.Draw(mask).ellipse([inset, inset, big - inset, big - inset], fill=255)
+    mask = mask.resize((size, size), Image.LANCZOS)
+    sq.putalpha(ImageChops.multiply(sq.getchannel("A"), mask))
+    return sq
 
 
-icon(192)
-icon(512)
-og()
+def save_mark(mark, size, name):
+    mark.resize((size, size), Image.LANCZOS).save(f"{OUT}/{name}")
+
+
+def app_icon(mark, size, name, pad=0.06):
+    bg = Image.new("RGBA", (size, size), NAVY + (255,))
+    inner = int(size * (1 - pad * 2))
+    m = mark.resize((inner, inner), Image.LANCZOS)
+    bg.alpha_composite(m, ((size - inner) // 2, (size - inner) // 2))
+    bg.convert("RGB").save(f"{OUT}/{name}")
+
+
+def wordmark_light(full):
+    """Wordmark for dark backgrounds: navy letters become white, gold stays, background transparent."""
+    w, h = full.size
+    box = nonwhite_bbox(full, (0, int(h * 0.66), w, h))
+    word = full.crop(box).convert("RGB")
+    out = Image.new("RGBA", word.size, (0, 0, 0, 0))
+    px, po = word.load(), out.load()
+    for y in range(word.height):
+        for x in range(word.width):
+            r, g, b = px[x, y]
+            ink = 255 - min(r, g, b)  # how far from white
+            if ink < 20:
+                continue
+            alpha = min(255, int(ink * 1.25))
+            if b > r:  # navy part
+                po[x, y] = (255, 255, 255, alpha)
+            else:  # gold part
+                po[x, y] = (246, 191, 71, alpha)
+    target_h = 64
+    out = out.resize((round(out.width * target_h / out.height), target_h), Image.LANCZOS)
+    out.save(f"{OUT}/wordmark-light.png")
+
+
+def og_image(full):
+    box = nonwhite_bbox(full)
+    logo = full.crop(box).convert("RGB")
+    canvas = Image.new("RGB", (1200, 630), (255, 255, 255))
+    scale = min(1000 / logo.width, 560 / logo.height)
+    logo = logo.resize((round(logo.width * scale), round(logo.height * scale)), Image.LANCZOS)
+    canvas.paste(logo, ((1200 - logo.width) // 2, (630 - logo.height) // 2))
+    canvas.save(f"{OUT}/og-default.png", optimize=True)
+
+
+src = Image.open("brand/logo-mark-source.webp").convert("RGB")
+NAVY = src.getpixel((int(src.width * 0.25), src.height // 2))
+full = Image.open("brand/logo-full-source.webp").convert("RGB")
+mark = circle_mark(src)
+save_mark(mark, 96, "logo-mark.png")
+save_mark(mark, 48, "favicon-48.png")
+save_mark(mark, 32, "favicon-32.png")
+app_icon(mark, 180, "apple-touch-icon.png")
+app_icon(mark, 192, "icon-192.png")
+app_icon(mark, 512, "icon-512.png", pad=0.12)
+wordmark_light(full)
+og_image(full)
+print("done")

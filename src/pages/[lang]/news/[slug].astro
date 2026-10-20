@@ -1,0 +1,66 @@
+---
+import { render } from 'astro:content';
+import { Image, getImage } from 'astro:assets';
+import Base from '../../../layouts/Base.astro';
+import { SITE } from '../../../data/site';
+import { t, href, formatDate, LANG_CODES, langInfo, type Lang } from '../../../i18n';
+import { getNews, type NewsItem } from '../../../lib/content';
+
+export async function getStaticPaths() {
+  const paths = [];
+  for (const lang of LANG_CODES) {
+    for (const item of await getNews(lang)) paths.push({ params: { lang, slug: item.slug }, props: { item } });
+  }
+  return paths;
+}
+const lang = Astro.params.lang as Lang;
+const { item } = Astro.props as { item: NewsItem };
+const d = t(lang);
+const { Content } = await render(item.entry);
+const path = `/news/${item.slug}/`;
+const url = new URL(href(lang, path), Astro.site).toString();
+const fallback = lang !== 'en' && !item.translated;
+const shareImage = item.image ? new URL((await getImage({ src: item.image, width: 1200 })).src, Astro.site).toString() : new URL('/og-default.png', Astro.site).toString();
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'NewsArticle',
+  headline: item.title,
+  description: item.summary,
+  inLanguage: langInfo(lang).hreflang,
+  datePublished: item.publishedAt.toISOString(),
+  dateModified: (item.updatedAt ?? item.publishedAt).toISOString(),
+  mainEntityOfPage: url,
+  image: [shareImage],
+  author: { '@type': 'Organization', name: SITE.name },
+  publisher: { '@type': 'Organization', name: SITE.name, logo: { '@type': 'ImageObject', url: new URL('/icon-512.png', Astro.site).toString() } },
+};
+---
+<Base lang={lang} path={path} title={item.title} description={item.summary} type="article" jsonLd={jsonLd} fallback={fallback}>
+  <article class="wrap narrow" lang={fallback ? 'en' : undefined}>
+    <div class="article-head">
+      <a class="crumb" href={href(lang, '/news/')} data-pagefind-ignore>‹ {d.nav.news}</a>
+      <span class:list={['tag', item.severity !== 'info' && item.severity]}>{d.categories[item.category]}</span>
+      <h1>{item.title}</h1>
+      <p class="muted">{item.summary}</p>
+      <span class="meta">
+        {d.article.published} {formatDate(item.publishedAt, lang)}{item.updatedAt && ` · ${d.article.updated} ${formatDate(item.updatedAt, lang)}`}
+        {item.affects.length > 0 && ` · ${d.article.affects}: ${item.affects.join(', ')}`}
+      </span>
+    </div>
+    {item.image && <Image class="news-thumb" src={item.image} alt={item.imageAlt ?? ''} widths={[480, 800, 1200]} sizes="(min-width: 800px) 760px, 100vw" />}
+    <div class="prose"><Content /></div>
+    <aside class="sources">
+      <b>{d.article.sources}</b>
+      <ul>{item.sources.map((s) => <li><a href={s.url} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </aside>
+    <div class="toolbar" data-pagefind-ignore>
+      <button class="btn ghost" type="button" data-share data-copied={d.article.copied}>{d.article.share}</button>
+      <a class="btn ghost" href={href(lang, '/news/')}>{d.article.moreNews}</a>
+      <a class="btn ghost" href={`${href(lang, '/about/')}?page=${encodeURIComponent(href(lang, path))}#contact`}>{d.article.report}</a>
+    </div>
+  </article>
+  <script>
+    import { wireShare } from '../../../lib/client';
+    wireShare();
+  </script>
+</Base>

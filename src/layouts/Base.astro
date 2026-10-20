@@ -1,58 +1,92 @@
 ---
 import '../styles/global.css';
 import Icon from '../components/Icon.astro';
-import { SITE, NAV, DESKTOP_NAV, EMERGENCY } from '../data/site';
+import { SITE, EMERGENCY_NUMBERS } from '../data/site';
+import { t, LANGS, langInfo, href, type Lang } from '../i18n';
+import { getGuides } from '../lib/content';
 
 interface Props {
+  lang: Lang;
+  /** Path without the language prefix, e.g. "/guides/visa-exemption/". */
+  path: string;
   title?: string;
   description?: string;
   type?: 'website' | 'article';
   jsonLd?: Record<string, unknown> | Record<string, unknown>[];
   noindex?: boolean;
+  /** Set when the page shows English content as a fallback: canonical points to English. */
+  fallback?: boolean;
 }
-const { title, description = SITE.description, type = 'website', jsonLd, noindex = false } = Astro.props;
-const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name}: ${SITE.tagline}`;
-const canonical = new URL(Astro.url.pathname, Astro.site);
-const ogImage = new URL('/og-default.png', Astro.site);
-const path = Astro.url.pathname;
-const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+const { lang, path, title, description, type = 'website', jsonLd, noindex = false, fallback = false } = Astro.props;
+const d = t(lang);
+const info = langInfo(lang);
+const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name}: ${d.meta.tagline}`;
+const desc = description ?? d.meta.description;
+const abs = (p: string) => new URL(p, Astro.site).toString();
+const canonical = abs(href(fallback ? 'en' : lang, path));
+const isActive = (p: string) => (p === '/' ? path === '/' : path.startsWith(p));
 const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
 const bingVerify = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
 
-const siteLd = {
-  '@context': 'https://schema.org',
-  '@type': 'WebSite',
-  name: SITE.name,
-  url: Astro.site?.toString(),
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: `${new URL('/search/', Astro.site)}?q={search_term_string}`,
-    'query-input': 'required name=search_term_string',
+const footerGuides = (await getGuides(lang)).filter((g) => ['visa-exemption', 'tdac-arrival-card', 'destination-thailand-visa', 'retirement-visa'].includes(g.slug));
+
+const NAV = [
+  { p: '/', label: d.nav.home, icon: 'home' },
+  { p: '/guides/', label: d.nav.guides, icon: 'book' },
+  { p: '/news/', label: d.nav.news, icon: 'news' },
+  { p: '/essentials/', label: d.nav.essentials, icon: 'kit' },
+  { p: '/search/', label: d.nav.search, icon: 'search' },
+];
+const DESKTOP_NAV = [
+  { p: '/guides/', label: d.nav.guides },
+  { p: '/news/', label: d.nav.news },
+  { p: '/visit/', label: d.nav.regions },
+  { p: '/essentials/', label: d.nav.essentials },
+  { p: '/calendar/', label: d.nav.calendar },
+];
+
+const ld = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: SITE.name,
+    url: abs(href(lang)),
+    inLanguage: info.hreflang,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${abs(href(lang, '/search/'))}?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
   },
-};
-const ld = [siteLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [])];
+  { '@context': 'https://schema.org', '@type': 'Organization', name: SITE.name, url: abs('/'), logo: abs('/icon-512.png') },
+  ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : []),
+];
 ---
 <!doctype html>
-<html lang="en">
+<html lang={info.hreflang}>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>{fullTitle}</title>
-  <meta name="description" content={description} />
+  <meta name="description" content={desc} />
   <link rel="canonical" href={canonical} />
-  {noindex && <meta name="robots" content="noindex" />}
-  <meta name="theme-color" content="#262062" />
-  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-  <link rel="apple-touch-icon" href="/icon-192.png" />
+  {(noindex || fallback) && <meta name="robots" content="noindex, follow" />}
+  {!fallback && LANGS.map((l) => <link rel="alternate" hreflang={l.hreflang} href={abs(href(l.code, path))} />)}
+  {!fallback && <link rel="alternate" hreflang="x-default" href={abs(href('en', path))} />}
+  <meta name="theme-color" content="#0a2c58" />
+  <link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+  <link rel="icon" href="/favicon-48.png" type="image/png" sizes="48x48" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="sitemap" href="/sitemap-index.xml" />
-  <link rel="alternate" type="application/rss+xml" title={`${SITE.name} news`} href="/rss.xml" />
+  <link rel="alternate" type="application/rss+xml" title={`${SITE.name} · ${d.nav.news}`} href={href(lang, '/rss.xml')} />
   <meta property="og:site_name" content={SITE.name} />
   <meta property="og:type" content={type} />
+  <meta property="og:locale" content={info.locale.slice(0, 5).replace('-', '_')} />
   <meta property="og:title" content={title ?? SITE.name} />
-  <meta property="og:description" content={description} />
+  <meta property="og:description" content={desc} />
   <meta property="og:url" content={canonical} />
-  <meta property="og:image" content={ogImage} />
+  <meta property="og:image" content={abs('/og-default.png')} />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -60,65 +94,70 @@ const ld = [siteLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [
   {bingVerify && <meta name="msvalidate.01" content={bingVerify} />}
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chonburi&family=Anuphan:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600&family=Anuphan:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
   <script type="application/ld+json" set:html={JSON.stringify(ld)} />
 </head>
 <body>
-  <a class="skip" href="#main">Skip to content</a>
+  <a class="skip" href="#main">{d.nav.skip}</a>
   <header class="header" id="site-header">
     <div class="wrap header-row">
-      <a class="logo" href="/" aria-label={`${SITE.name} home`}>
-        <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#f1efff" /><circle cx="16" cy="16" r="8" fill="#e39b17" /></svg>
-        All About Thailand
+      <a class="logo" href={href(lang)} aria-label={`${SITE.name} · ${d.nav.home}`}>
+        <img class="mark" src="/logo-mark.png" alt="" width="38" height="38" />
+        <img class="word" src="/wordmark-light.png" alt="allaboutthailand" width="133" height="21" />
       </a>
       <nav aria-label="Main">
         <ul class="top-nav">
-          {DESKTOP_NAV.map((n) => <li><a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a></li>)}
+          {DESKTOP_NAV.map((n) => <li><a href={href(lang, n.p)} aria-current={isActive(n.p) ? 'page' : undefined}>{n.label}</a></li>)}
         </ul>
       </nav>
-      <a class="icon-btn" href="/search/" aria-label="Search"><Icon name="search" /></a>
+      <div class="header-actions">
+        <button class="lang-btn" type="button" id="lang-open" aria-haspopup="dialog" aria-controls="lang-sheet" aria-label={d.nav.language}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18" /></svg>
+          {info.flag}
+        </button>
+        <a class="icon-btn" href={href(lang, '/search/')} aria-label={d.nav.search}><Icon name="search" /></a>
+      </div>
     </div>
   </header>
 
-  <main id="main" data-pagefind-body={noindex ? undefined : ''}>
+  {fallback && <div class="wrap" style="padding-top:16px"><p class="notice" data-pagefind-ignore>{d.article.notTranslated}</p></div>}
+
+  <main id="main" data-pagefind-body={noindex || fallback ? undefined : ''}>
     <slot />
   </main>
 
   <footer class="footer">
     <div class="wrap">
       <div class="foot-grid">
-        <div><b>Guides</b><ul>
-          <li><a href="/guides/visa-exemption/">Visa exemption</a></li>
-          <li><a href="/guides/tdac-arrival-card/">TDAC arrival card</a></li>
-          <li><a href="/guides/destination-thailand-visa/">DTV visa</a></li>
-          <li><a href="/guides/retirement-visa/">Retirement visa</a></li>
+        <div><b>{d.footer.guides}</b><ul>
+          {footerGuides.map((g) => <li><a href={href(lang, `/guides/${g.slug}/`)}>{g.title}</a></li>)}
         </ul></div>
-        <div><b>Explore</b><ul>
-          <li><a href="/visit/">Regions</a></li>
-          <li><a href="/calendar/">Holidays &amp; festivals</a></li>
-          <li><a href="/news/">News</a></li>
-          <li><a href="/rss.xml">RSS feed</a></li>
+        <div><b>{d.footer.explore}</b><ul>
+          <li><a href={href(lang, '/visit/')}>{d.nav.regions}</a></li>
+          <li><a href={href(lang, '/calendar/')}>{d.footer.holidays}</a></li>
+          <li><a href={href(lang, '/news/')}>{d.nav.news}</a></li>
+          <li><a href={href(lang, '/rss.xml')}>{d.footer.rss}</a></li>
         </ul></div>
-        <div><b>Essentials</b><ul>
-          <li><a href="/essentials/#sos">Emergency numbers</a></li>
-          <li><a href="/essentials/#converter">Currency converter</a></li>
-          <li><a href="/essentials/#driver">Show to driver</a></li>
-          <li><a href="/essentials/#phrases">Thai phrases</a></li>
+        <div><b>{d.footer.essentials}</b><ul>
+          <li><a href={href(lang, '/essentials/#sos')}>{d.sos.title}</a></li>
+          <li><a href={href(lang, '/essentials/#converter')}>{d.footer.converter}</a></li>
+          <li><a href={href(lang, '/essentials/#driver')}>{d.footer.driver}</a></li>
+          <li><a href={href(lang, '/essentials/#phrases')}>{d.footer.phrases}</a></li>
         </ul></div>
-        <div><b>About</b><ul>
-          <li><a href="/about/">About &amp; sources</a></li>
-          <li><a href="/about/#contact">Report a correction</a></li>
-          <li><a href="/privacy/">Privacy</a></li>
+        <div><b>{d.footer.about}</b><ul>
+          <li><a href={href(lang, '/about/')}>{d.footer.aboutSources}</a></li>
+          <li><a href={href(lang, '/about/#contact')}>{d.article.report}</a></li>
+          <li><a href={href(lang, '/privacy/')}>{d.footer.privacy}</a></li>
         </ul></div>
       </div>
-      <p class="legal">© {new Date().getFullYear()} {SITE.name}. General information only, not legal advice. Always confirm visa and legal matters with the Immigration Bureau or a Thai embassy.</p>
+      <p class="legal">© {new Date().getFullYear()} {SITE.name}. {d.footer.legal}</p>
     </div>
   </footer>
 
-  <nav class="bottom-nav" aria-label="Quick">
+  <nav class="bottom-nav" aria-label={d.nav.home}>
     <ul>
       {NAV.map((n) => (
-        <li><a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}><Icon name={n.icon} />{n.label}</a></li>
+        <li><a href={href(lang, n.p)} aria-current={isActive(n.p) ? 'page' : undefined}><Icon name={n.icon} />{n.label}</a></li>
       ))}
     </ul>
   </nav>
@@ -127,23 +166,45 @@ const ld = [siteLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [
   <dialog class="sheet" id="sos-sheet" aria-labelledby="sos-title">
     <div class="sheet-inner">
       <div class="sheet-head">
-        <h2 id="sos-title" style="font-size:1.3rem">Emergency numbers</h2>
-        <button class="close-btn" type="button" id="sos-close" aria-label="Close">×</button>
+        <h2 id="sos-title" style="font-size:1.3rem">{d.sos.title}</h2>
+        <button class="close-btn" type="button" data-close aria-label={d.nav.close}>×</button>
       </div>
       <div class="call-list">
-        {EMERGENCY.map((e) => (
-          <a class="call" href={`tel:${e.number}`}><span><b>{e.label}</b><small>{e.note}</small></span><span class="num">{e.number}</span></a>
+        {EMERGENCY_NUMBERS.map((n, i) => (
+          <a class="call" href={`tel:${n}`}><span><b>{d.emergency[i].label}</b><small>{d.emergency[i].note}</small></span><span class="num">{n}</span></a>
         ))}
       </div>
-      <p class="muted" style="font-size:.88rem">Tap a number to call. Free from any phone in Thailand.</p>
+      <p class="muted" style="font-size:.88rem">{d.sos.tap}</p>
+    </div>
+  </dialog>
+
+  <dialog class="sheet" id="lang-sheet" aria-labelledby="lang-title">
+    <div class="sheet-inner">
+      <div class="sheet-head">
+        <h2 id="lang-title" style="font-size:1.3rem">{d.nav.language}</h2>
+        <button class="close-btn" type="button" data-close aria-label={d.nav.close}>×</button>
+      </div>
+      <ul class="lang-list">
+        {LANGS.map((l) => (
+          <li><a href={href(l.code, path)} hreflang={l.hreflang} lang={l.hreflang} data-lang={l.code} aria-current={l.code === lang ? 'true' : undefined}><span class="code">{l.flag}</span>{l.name}</a></li>
+        ))}
+      </ul>
     </div>
   </dialog>
 
   <script>
-    const sheet = document.getElementById('sos-sheet') as HTMLDialogElement | null;
-    document.getElementById('sos-open')?.addEventListener('click', () => sheet?.showModal());
-    document.getElementById('sos-close')?.addEventListener('click', () => sheet?.close());
-    sheet?.addEventListener('click', (e) => { if (e.target === sheet) sheet.close(); });
+    const open = (id: string) => (document.getElementById(id) as HTMLDialogElement | null)?.showModal();
+    document.getElementById('sos-open')?.addEventListener('click', () => open('sos-sheet'));
+    document.getElementById('lang-open')?.addEventListener('click', () => open('lang-sheet'));
+    document.querySelectorAll<HTMLDialogElement>('dialog.sheet').forEach((dlg) => {
+      dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+      dlg.querySelector('[data-close]')?.addEventListener('click', () => dlg.close());
+    });
+
+    // Remember the language: Netlify's language redirect reads the nf_lang cookie.
+    document.querySelectorAll<HTMLAnchorElement>('[data-lang]').forEach((a) => a.addEventListener('click', () => {
+      document.cookie = `nf_lang=${a.dataset.lang}; path=/; max-age=31536000; samesite=lax`;
+    }));
 
     // Hide the header while scrolling down on small screens.
     const header = document.getElementById('site-header');

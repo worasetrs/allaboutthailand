@@ -1,14 +1,13 @@
 ---
-import type { CollectionEntry } from 'astro:content';
-import { CATEGORY_LABEL } from '../data/site';
-import { formatDate } from '../lib/format';
-interface Props { item: CollectionEntry<'news'> }
-const { item } = Astro.props;
-const d = item.data;
+import type { NewsItem } from '../lib/content';
+import { t, href, formatDate, type Lang } from '../i18n';
+interface Props { item: NewsItem; lang: Lang }
+const { item, lang } = Astro.props;
+const d = t(lang);
 ---
-<a class:list={['news-item', d.severity === 'urgent' && 'urgent']} href={`/news/${item.id}/`} data-category={d.category}>
-  <span class:list={['tag', d.severity !== 'info' && d.severity]}>{d.severity === 'urgent' ? '⚠ ' : ''}{CATEGORY_LABEL[d.category]}</span>
-  <h3>{d.title}</h3>
-  <p>{d.summary}</p>
-  <span class="meta">{formatDate(d.publishedAt)}{d.affects.length > 0 && ` · Affects: ${d.affects.join(', ')}`}</span>
+<a class:list={['news-item', item.severity === 'urgent' && 'urgent']} href={href(lang, `/news/${item.slug}/`)} data-category={item.category}>
+  <span class:list={['tag', item.severity !== 'info' && item.severity]}>{item.severity === 'urgent' ? '⚠ ' : ''}{d.categories[item.category]}</span>
+  <h3>{item.title}</h3>
+  <p>{item.summary}</p>
+  <span class="meta">{formatDate(item.publishedAt, lang)}{item.affects.length > 0 && ` · ${d.article.affects}: ${item.affects.join(', ')}`}</span>
 </a>

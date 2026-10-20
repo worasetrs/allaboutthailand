@@ -1,91 +1,47 @@
 ---
-import { getCollection } from 'astro:content';
-import Base from '../layouts/Base.astro';
-import TodayPanel from '../components/TodayPanel.astro';
-import NewsItem from '../components/NewsItem.astro';
-import Briefing from '../components/Briefing.astro';
-import { PATHS, EMERGENCY } from '../data/site';
-import { REGIONS } from '../data/regions';
-
-const news = (await getCollection('news')).sort((a, b) => +b.data.publishedAt - +a.data.publishedAt).slice(0, 4);
-const guides = await getCollection('guides');
-const countFor = (p: string) => guides.filter((g) => g.data.path === p).length;
-const firstFor = (p: string) => guides.filter((g) => g.data.path === p).sort((a, b) => a.data.order - b.data.order)[0];
+// Netlify sends visitors from "/" to their language (see public/_redirects).
+// This page is the fallback: it redirects in the browser and lists every language.
+import '../styles/global.css';
+import { LANGS } from '../i18n';
+import { SITE } from '../data/site';
+const abs = (p: string) => new URL(p, Astro.site).toString();
+const codes = LANGS.map((l) => l.code);
 ---
-<Base>
-  <section class="hero">
-    <div class="wrap hero-grid">
-      <div>
-        <div class="eyebrow" style="color:var(--saffron)">The practical guide for foreigners</div>
-        <h1>Thailand, explained <em>before</em> you land and after you stay.</h1>
-        <p class="lead">Visas, money, safety, culture and the news that affects foreigners, in plain English, with a link to the official source on every page.</p>
-        <form class="hero-search" role="search" action="/search/" method="get">
-          <label for="hero-q" class="hp">Search the guides</label>
-          <input id="hero-q" name="q" type="search" placeholder="e.g. extend visa exemption" autocomplete="off" />
-          <button type="submit">Search</button>
-        </form>
-        <div class="chips">
-          <a href="/guides/visa-exemption/">30-day visa rule</a>
-          <a href="/guides/tdac-arrival-card/">TDAC arrival card</a>
-          <a href="/guides/90-day-report-and-tm30/">90-day report</a>
-          <a href="/guides/destination-thailand-visa/">DTV visa</a>
-          <a href="/essentials/#driver">Show to driver</a>
-        </div>
-      </div>
-      <TodayPanel />
-    </div>
-  </section>
-
-  <section class="block">
-    <div class="wrap">
-      <div class="sec-head"><div><div class="eyebrow">Start here</div><h2>What brings you to Thailand?</h2>
-      <p>Step-by-step guides with documents, offices and costs.</p></div></div>
-      <div class="paths">
-        {Object.entries(PATHS).map(([key, p]) => {
-          const first = firstFor(key);
-          return (
-            <a class="path" href={first ? `/guides/#${key}` : '/guides/'}>
-              <span class="tag-line">{p.tag} · {countFor(key)} {countFor(key) === 1 ? 'guide' : 'guides'}</span>
-              <h3>{p.title}</h3>
-              <p>{p.blurb}</p>
-            </a>
-          );
-        })}
-      </div>
-    </div>
-  </section>
-
-  <section class="block band">
-    <div class="wrap">
-      <div class="sec-head"><div><div class="eyebrow">News for foreigners</div><h2>What changed recently</h2>
-      <p>Only news that affects foreigners, each story linked to its source.</p></div>
-      <a class="more" href="/news/">All news →</a></div>
-      <div class="news-list">{news.map((n) => <NewsItem item={n} />)}</div>
-    </div>
-  </section>
-
-  <section class="block">
-    <div class="wrap">
-      <div class="sec-head"><div><div class="eyebrow">Explore by region</div><h2>Six regions, six different trips</h2></div>
-      <a class="more" href="/visit/">All regions →</a></div>
-      <div class="regions">
-        {REGIONS.map((r) => (
-          <a class="region" href={`/visit/${r.slug}/`}><b>{r.name}</b><span class="th" lang="th">{r.thai}</span><p>{r.places.slice(0, 3).map((p) => p.name).join(' · ')}</p></a>
-        ))}
-      </div>
-    </div>
-  </section>
-
-  <section class="block band">
-    <div class="wrap">
-      <div class="sec-head"><div><div class="eyebrow">Keep these close</div><h2>Emergency numbers</h2>
-      <p>Free from any phone. The SOS button on every page opens this list.</p></div>
-      <a class="more" href="/essentials/">All essentials →</a></div>
-      <div class="call-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-        {EMERGENCY.map((e) => <a class="call" href={`tel:${e.number}`}><span><b>{e.label}</b><small>{e.note}</small></span><span class="num">{e.number}</span></a>)}
-      </div>
-    </div>
-  </section>
-
-  <Briefing />
-</Base>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{SITE.name}</title>
+  <meta name="description" content="The practical guide to Thailand for foreigners, in 11 languages." />
+  <link rel="canonical" href={abs('/en/')} />
+  {LANGS.map((l) => <link rel="alternate" hreflang={l.hreflang} href={abs(`/${l.code}/`)} />)}
+  <link rel="alternate" hreflang="x-default" href={abs('/')} />
+  <link rel="icon" href="/favicon-32.png" type="image/png" />
+  <meta name="theme-color" content="#0a2c58" />
+  <script is:inline define:vars={{ codes }}>
+    (function () {
+      var m = document.cookie.match(/(?:^|; )nf_lang=([a-z]{2})/);
+      var pick = m && codes.indexOf(m[1]) >= 0 ? m[1] : null;
+      if (!pick) {
+        var prefs = navigator.languages || [navigator.language || 'en'];
+        for (var i = 0; i < prefs.length && !pick; i++) {
+          var c = String(prefs[i]).toLowerCase().slice(0, 2);
+          if (c === 'nb' || c === 'nn') c = 'no';
+          if (codes.indexOf(c) >= 0) pick = c;
+        }
+      }
+      location.replace('/' + (pick || 'en') + '/');
+    })();
+  </script>
+</head>
+<body style="background:var(--navy);color:var(--on-navy);min-height:100vh;display:grid;place-items:center">
+  <main class="wrap" style="padding-block:48px;display:grid;gap:20px;justify-items:center;text-align:center">
+    <img src="/logo-mark.png" alt="" width="96" height="96" />
+    <img src="/wordmark-light.png" alt="allaboutthailand" width="266" height="42" />
+    <ul style="list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:560px">
+      {LANGS.map((l) => <li><a href={`/${l.code}/`} hreflang={l.hreflang} lang={l.hreflang} style="color:var(--on-navy);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:8px 16px;display:inline-block;text-decoration:none">{l.name}</a></li>)}
+    </ul>
+  </main>
+</body>
+</html>

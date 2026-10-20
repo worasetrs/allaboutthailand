@@ -1,0 +1,59 @@
+---
+import Base from '../../layouts/Base.astro';
+import { CALENDAR, CALENDAR_SOURCES } from '../../data/calendar';
+import { t, langInfo, langPaths, type Lang } from '../../i18n';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.params.lang as Lang;
+const d = t(lang);
+const c = d.calendar;
+const locale = langInfo(lang).locale;
+const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(locale, { timeZone: 'Asia/Bangkok', ...o }).format(new Date(iso + 'T12:00:00+07:00'));
+const name = (k: string) => c.names[k as keyof typeof c.names];
+const note = (k?: string) => (k ? c.notes[k as keyof typeof c.notes] : undefined);
+const rows = CALENDAR.map((e) => ({
+  ...e,
+  label: name(e.name),
+  text: note(e.note),
+  day: fmt(e.date, { day: 'numeric', month: 'short' }) + (e.end ? ' – ' + fmt(e.end, { day: 'numeric', month: 'short' }) : ''),
+  sub: fmt(e.date, { weekday: 'short', year: 'numeric' }),
+}));
+const jsonLd = rows.filter((r) => !r.holiday).map((r) => ({
+  '@context': 'https://schema.org', '@type': 'Event', name: r.label, startDate: r.date, description: r.text,
+  eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode', eventStatus: 'https://schema.org/EventScheduled',
+  location: { '@type': 'Place', name: 'Thailand', address: { '@type': 'PostalAddress', addressCountry: 'TH' } },
+}));
+---
+<Base lang={lang} path="/calendar/" title={c.metaTitle} description={c.metaDescription} jsonLd={jsonLd}>
+  <div class="wrap narrow">
+    <div class="article-head">
+      <div class="eyebrow">{c.eyebrow}</div>
+      <h1>{c.title}</h1>
+      <p class="muted">{c.lead}</p>
+    </div>
+    <div class="cal-list" id="cal">
+      {rows.map((r) => (
+        <div class="cal-row" data-date={r.end ?? r.date}>
+          <div class="d">{r.day}<small>{r.sub}</small></div>
+          <div>
+            <b>{r.label}</b>
+            <span class:list={['badge', r.holiday ? 'off' : 'fest']}>{r.holiday ? c.dayOff : c.festival}</span>
+            {r.text && <p class="muted" style="font-size:.93rem">{r.text}</p>}
+          </div>
+        </div>
+      ))}
+    </div>
+    <section class="block" style="padding-block:32px">
+      <h2 style="margin-bottom:12px">{c.seasonsTitle}</h2>
+      <div class="seasons">{c.seasons.map((s) => <div class="season"><b>{s.name}</b><div class="mono">{s.months}</div><p class="muted">{s.note}</p></div>)}</div>
+    </section>
+    <aside class="sources" style="margin-bottom:48px">
+      <b>{d.article.sources}</b>
+      <ul>{CALENDAR_SOURCES.map((s) => <li><a href={s.url} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </aside>
+  </div>
+  <script>
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+    document.querySelectorAll<HTMLElement>('#cal [data-date]').forEach((r) => { if ((r.dataset.date ?? '') < today) r.classList.add('past'); });
+  </script>
+</Base>

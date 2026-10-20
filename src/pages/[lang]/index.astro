@@ -1,0 +1,84 @@
+---
+import Base from '../../layouts/Base.astro';
+import TodayPanel from '../../components/TodayPanel.astro';
+import NewsCorner from '../../components/NewsCorner.astro';
+import Briefing from '../../components/Briefing.astro';
+import { PATH_KEYS, EMERGENCY_NUMBERS } from '../../data/site';
+import { REGION_SLUGS, REGION_THAI } from '../../data/regions';
+import { t, href, langPaths, type Lang } from '../../i18n';
+import { getGuides, getNews } from '../../lib/content';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.params.lang as Lang;
+const d = t(lang);
+const news = (await getNews(lang)).slice(0, 4);
+const guides = await getGuides(lang);
+const count = (p: string) => guides.filter((g) => g.path === p).length;
+const chipLinks = ['/guides/visa-exemption/', '/guides/tdac-arrival-card/', '/guides/90-day-report-and-tm30/', '/guides/destination-thailand-visa/', '/essentials/#driver'];
+---
+<Base lang={lang} path="/">
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow" style="color:var(--gold)">{d.hero.eyebrow}</div>
+        <h1>{d.hero.title1} <em>{d.hero.em}</em> {d.hero.title2}</h1>
+        <p class="lead">{d.hero.lead}</p>
+        <form class="hero-search" role="search" action={href(lang, '/search/')} method="get">
+          <label for="hero-q" class="hp">{d.nav.search}</label>
+          <input id="hero-q" name="q" type="search" placeholder={d.hero.placeholder} autocomplete="off" />
+          <button type="submit">{d.hero.button}</button>
+        </form>
+        <div class="chips">
+          {chipLinks.map((p, i) => <a href={href(lang, p)}>{d.hero.chips[i]}</a>)}
+        </div>
+      </div>
+      <TodayPanel lang={lang} />
+    </div>
+  </section>
+
+  <NewsCorner lang={lang} items={news} />
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="eyebrow">{d.home.startEyebrow}</div><h2>{d.home.startTitle}</h2><p>{d.home.startLead}</p></div></div>
+      <div class="paths">
+        {PATH_KEYS.map((key) => {
+          const p = d.paths[key];
+          const n = count(key);
+          return (
+            <a class="path" href={href(lang, `/guides/#${key}`)}>
+              <span class="tag-line">{p.tag} · {n} {n === 1 ? d.home.guide : d.home.guides}</span>
+              <h3>{p.title}</h3>
+              <p>{p.blurb}</p>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+
+  <section class="block band">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="eyebrow">{d.home.regionsEyebrow}</div><h2>{d.home.regionsTitle}</h2></div>
+      <a class="more" href={href(lang, '/visit/')}>{d.home.regionsAll}</a></div>
+      <div class="regions">
+        {REGION_SLUGS.map((s) => {
+          const r = d.regions.list[s];
+          return <a class="region" href={href(lang, `/visit/${s}/`)}><b>{r.name}</b><span class="th" lang="th">{REGION_THAI[s]}</span><p>{r.places.slice(0, 3).map((p) => p.name).join(' · ')}</p></a>;
+        })}
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="eyebrow">{d.home.sosEyebrow}</div><h2>{d.home.sosTitle}</h2><p>{d.home.sosLead}</p></div>
+      <a class="more" href={href(lang, '/essentials/')}>{d.home.essentialsAll}</a></div>
+      <div class="call-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+        {EMERGENCY_NUMBERS.map((n, i) => <a class="call" href={`tel:${n}`}><span><b>{d.emergency[i].label}</b><small>{d.emergency[i].note}</small></span><span class="num">{n}</span></a>)}
+      </div>
+    </div>
+  </section>
+
+  <Briefing lang={lang} />
+</Base>

@@ -1,0 +1,29 @@
+---
+import Base from '../../layouts/Base.astro';
+import { t, langPaths, type Lang } from '../../i18n';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.params.lang as Lang;
+const d = t(lang);
+---
+<Base lang={lang} path="/search/" title={d.search.title} description={d.search.metaDescription}>
+  <div class="wrap narrow" data-pagefind-ignore="all">
+    <div class="article-head">
+      <h1>{d.search.title}</h1>
+      <p class="muted">{d.search.lead}</p>
+    </div>
+    <div class="search-wrap" id="search" data-unavailable={d.search.unavailable} style="padding-bottom:48px"></div>
+  </div>
+  <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+  <script is:inline src="/pagefind/pagefind-ui.js"></script>
+  <script is:inline>
+    window.addEventListener('DOMContentLoaded', () => {
+      const el = document.getElementById('search');
+      if (!window.PagefindUI) { el.textContent = el.dataset.unavailable; return; }
+      // Pagefind picks the index that matches <html lang>.
+      const ui = new PagefindUI({ element: '#search', showSubResults: true, showImages: false, autofocus: true });
+      const q = new URLSearchParams(location.search).get('q');
+      if (q) ui.triggerSearch(q);
+    });
+  </script>
+</Base>

@@ -1,16 +1,17 @@
 // Offline support: essentials and key guides are precached; other pages are
 // cached as you visit them (network first, cache as fallback).
-const VERSION = 'aat-v1';
+const VERSION = 'aat-v2';
+// Pages are per language (/en/, /th/, ...). The visitor's current language is
+// cached on first visit by the navigation handler below; these cover English.
 const PRECACHE = [
-  '/',
-  '/essentials/',
-  '/guides/',
-  '/guides/visa-exemption/',
-  '/guides/tdac-arrival-card/',
-  '/guides/healthcare-and-emergencies/',
-  '/guides/money-atms-and-payments/',
-  '/guides/etiquette-and-laws/',
-  '/favicon.svg',
+  '/en/',
+  '/en/essentials/',
+  '/en/guides/',
+  '/en/guides/visa-exemption/',
+  '/en/guides/tdac-arrival-card/',
+  '/en/guides/healthcare-and-emergencies/',
+  '/logo-mark.png',
+  '/wordmark-light.png',
 ];
 
 self.addEventListener('install', (event) => {
@@ -35,7 +36,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => { const copy = res.clone(); caches.open(VERSION).then((c) => c.put(req, copy)); return res; })
-        .catch(() => caches.match(req).then((r) => r || caches.match('/essentials/'))),
+        .catch(() => caches.match(req).then((r) => r || caches.match(new URL(req.url).pathname.slice(0, 4) + 'essentials/')).then((r) => r || caches.match('/en/essentials/'))),
     );
     return;
   }

@@ -1,4 +1,5 @@
 // "khrap" is said by men, "kha" by women. speak uses the male form for the voice.
+// Meanings are translated in src/i18n/<lang>.ts under phrases (same order).
 export const PHRASES = [
   { en: 'Hello', th: 'สวัสดีครับ / ค่ะ', say: 'sa-wat-dee khrap / kha', speak: 'สวัสดีครับ' },
   { en: 'Thank you', th: 'ขอบคุณครับ / ค่ะ', say: 'khop khun khrap / kha', speak: 'ขอบคุณครับ' },

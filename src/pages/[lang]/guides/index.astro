@@ -1,0 +1,36 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { PATH_KEYS } from '../../../data/site';
+import { t, href, formatDate, langPaths, type Lang } from '../../../i18n';
+import { getGuides } from '../../../lib/content';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.params.lang as Lang;
+const d = t(lang);
+const guides = await getGuides(lang);
+const groups = PATH_KEYS.map((key) => ({ key, ...d.paths[key], items: guides.filter((g) => g.path === key) })).filter((g) => g.items.length > 0);
+---
+<Base lang={lang} path="/guides/" title={d.guides.title} description={d.guides.metaDescription}>
+  <div class="wrap narrow">
+    <div class="article-head">
+      <div class="eyebrow">{d.guides.eyebrow}</div>
+      <h1>{d.guides.title}</h1>
+      <p class="muted">{d.guides.lead}</p>
+    </div>
+    {groups.map((g) => (
+      <section class="block" id={g.key} style="padding-block:20px">
+        <div class="eyebrow">{g.tag}</div>
+        <h2 style="margin-bottom:8px">{g.title}</h2>
+        <div class="news-list">
+          {g.items.map((item) => (
+            <a class="news-item" href={href(lang, `/guides/${item.slug}/`)}>
+              <h3>{item.title}</h3>
+              <p>{item.summary}</p>
+              <span class="meta">{d.article.checked} {formatDate(item.lastChecked, lang)}{item.offline && ` · ${d.article.worksOffline}`}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    ))}
+  </div>
+</Base>

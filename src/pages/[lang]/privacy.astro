@@ -1,0 +1,16 @@
+---
+import Base from '../../layouts/Base.astro';
+import { t, langPaths, type Lang } from '../../i18n';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.params.lang as Lang;
+const p = t(lang).privacy;
+---
+<Base lang={lang} path="/privacy/" title={p.title} description={p.metaDescription}>
+  <div class="wrap narrow">
+    <div class="article-head"><h1>{p.title}</h1></div>
+    <div class="prose" style="padding-bottom:48px">
+      <ul>{p.items.map((i) => <li><b>{i.b}</b> {i.text}</li>)}</ul>
+    </div>
+  </div>
+</Base>

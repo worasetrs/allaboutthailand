@@ -1,0 +1,37 @@
+---
+import Base from '../../../layouts/Base.astro';
+import NewsItem from '../../../components/NewsItem.astro';
+import Briefing from '../../../components/Briefing.astro';
+import { t, href, langPaths, type Lang } from '../../../i18n';
+import { getNews } from '../../../lib/content';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.params.lang as Lang;
+const d = t(lang);
+const news = await getNews(lang);
+const cats = [...new Set(news.map((n) => n.category))];
+---
+<Base lang={lang} path="/news/" title={d.news.title} description={d.news.metaDescription}>
+  <div class="wrap narrow">
+    <div class="article-head">
+      <div class="eyebrow">{d.news.eyebrow}</div>
+      <h1>{d.news.title}</h1>
+      <p class="muted">{d.news.lead} <a href={href(lang, '/rss.xml')}>{d.news.rss}</a></p>
+    </div>
+    <div class="filters" role="group" aria-label={d.news.eyebrow} data-pagefind-ignore>
+      <button type="button" aria-pressed="true" data-filter="all">{d.news.all}</button>
+      {cats.map((c) => <button type="button" aria-pressed="false" data-filter={c}>{d.categories[c]}</button>)}
+    </div>
+    <div class="news-list" id="news-list">{news.map((n) => <NewsItem item={n} lang={lang} />)}</div>
+  </div>
+  <Briefing lang={lang} />
+  <script>
+    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-filter]');
+    const items = document.querySelectorAll<HTMLElement>('#news-list [data-category]');
+    buttons.forEach((b) => b.addEventListener('click', () => {
+      buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      const f = b.dataset.filter;
+      items.forEach((i) => { i.hidden = f !== 'all' && i.dataset.category !== f; });
+    }));
+  </script>
+</Base>

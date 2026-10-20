@@ -1,0 +1,24 @@
+# Send "/" to the visitor's language. Netlify checks the nf_lang cookie first,
+# then the browser's Accept-Language header.
+/  /nl/  302!  Language=nl
+/  /de/  302!  Language=de
+/  /sv/  302!  Language=sv
+/  /fi/  302!  Language=fi
+/  /no/  302!  Language=no,nb,nn
+/  /fr/  302!  Language=fr
+/  /da/  302!  Language=da
+/  /th/  302!  Language=th
+/  /zh/  302!  Language=zh
+/  /ru/  302!  Language=ru
+/  /en/  302!
+
+# Addresses from before the site had languages.
+/guides/*      /en/guides/:splat     301
+/news/*        /en/news/:splat       301
+/visit/*       /en/visit/:splat      301
+/essentials/   /en/essentials/       301
+/calendar/     /en/calendar/         301
+/search/       /en/search/           301
+/about/        /en/about/            301
+/privacy/      /en/privacy/          301
+/rss.xml       /en/rss.xml           301

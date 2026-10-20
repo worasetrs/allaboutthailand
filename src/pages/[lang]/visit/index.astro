@@ -1,0 +1,31 @@
+---
+import Base from '../../../layouts/Base.astro';
+import { REGION_SLUGS, REGION_THAI } from '../../../data/regions';
+import { t, href, langPaths, type Lang } from '../../../i18n';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.params.lang as Lang;
+const d = t(lang);
+---
+<Base lang={lang} path="/visit/" title={d.regions.title} description={d.regions.lead}>
+  <div class="wrap">
+    <div class="article-head narrow">
+      <div class="eyebrow">{d.regions.eyebrow}</div>
+      <h1>{d.regions.title}</h1>
+      <p class="muted">{d.regions.lead}</p>
+    </div>
+    <div class="regions" style="padding-bottom:48px">
+      {REGION_SLUGS.map((s) => {
+        const r = d.regions.list[s];
+        return (
+          <a class="region" href={href(lang, `/visit/${s}/`)}>
+            <b>{r.name}</b>
+            <span class="th" lang="th">{REGION_THAI[s]}</span>
+            <p>{r.intro}</p>
+            <span class="meta">{d.regions.best}: {r.bestTime}</span>
+          </a>
+        );
+      })}
+    </div>
+  </div>
+</Base>

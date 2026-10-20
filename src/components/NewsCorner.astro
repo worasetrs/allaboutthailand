@@ -1,0 +1,36 @@
+---
+import { Image } from 'astro:assets';
+import NewsItem from './NewsItem.astro';
+import type { NewsItem as Item } from '../lib/content';
+import { t, href, formatDate, type Lang } from '../i18n';
+interface Props { lang: Lang; items: Item[] }
+const { lang, items } = Astro.props;
+const d = t(lang);
+const [top, ...rest] = items;
+---
+<section class="block band" id="news-corner">
+  <div class="wrap">
+    <div class="sec-head">
+      <div><div class="eyebrow">{d.home.newsEyebrow}</div><h2>{d.home.newsTitle}</h2><p>{d.home.newsLead}</p></div>
+      <a class="more" href={href(lang, '/news/')}>{d.home.newsAll}</a>
+    </div>
+    {top && (
+      <div class="news-corner">
+        <a class="lead-story" href={href(lang, `/news/${top.slug}/`)}>
+          <div class="lead-media">
+            {top.image
+              ? <Image src={top.image} alt={top.imageAlt ?? ''} widths={[480, 800, 1200]} sizes="(min-width: 900px) 640px, 100vw" />
+              : <><div class="pattern"></div><img class="placeholder" src="/logo-mark.png" alt="" width="96" height="96" /></>}
+          </div>
+          <div class="lead-body">
+            <span class:list={['tag', top.severity !== 'info' && top.severity]}>{d.home.topStory} · {d.categories[top.category]}</span>
+            <h3>{top.title}</h3>
+            <p>{top.summary}</p>
+            <span class="meta">{formatDate(top.publishedAt, lang)}</span>
+          </div>
+        </a>
+        <div class="news-list">{rest.slice(0, 3).map((n) => <NewsItem item={n} lang={lang} />)}</div>
+      </div>
+    )}
+  </div>
+</section>

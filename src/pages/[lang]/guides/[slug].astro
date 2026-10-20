@@ -1,0 +1,82 @@
+---
+import { render } from 'astro:content';
+import Base from '../../../layouts/Base.astro';
+import { SITE } from '../../../data/site';
+import { t, href, formatDate, daysSince, isoDate, FRESH_DAYS, LANG_CODES, langInfo, type Lang } from '../../../i18n';
+import { getGuides, type Guide } from '../../../lib/content';
+
+export async function getStaticPaths() {
+  const paths = [];
+  for (const lang of LANG_CODES) {
+    for (const guide of await getGuides(lang)) paths.push({ params: { lang, slug: guide.slug }, props: { guide } });
+  }
+  return paths;
+}
+const lang = Astro.params.lang as Lang;
+const { guide } = Astro.props as { guide: Guide };
+const d = t(lang);
+const { Content } = await render(guide.entry);
+const stale = daysSince(guide.lastChecked) > FRESH_DAYS;
+const path = `/guides/${guide.slug}/`;
+const url = new URL(href(lang, path), Astro.site).toString();
+const fallback = lang !== 'en' && !guide.translated;
+const jsonLd = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: guide.title,
+    description: guide.summary,
+    inLanguage: langInfo(lang).hreflang,
+    dateModified: isoDate(guide.lastChecked),
+    mainEntityOfPage: url,
+    publisher: { '@type': 'Organization', name: SITE.name },
+    citation: guide.sources.map((s) => s.url),
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: d.nav.guides, item: new URL(href(lang, '/guides/'), Astro.site).toString() },
+      { '@type': 'ListItem', position: 2, name: guide.title, item: url },
+    ],
+  },
+];
+---
+<Base lang={lang} path={path} title={guide.title} description={guide.summary} type="article" jsonLd={jsonLd} fallback={fallback}>
+  <article class="wrap narrow" lang={fallback ? 'en' : undefined}>
+    <div class="article-head">
+      <a class="crumb" href={href(lang, `/guides/#${guide.path}`)} data-pagefind-ignore>‹ {d.paths[guide.path].title}</a>
+      <h1>{guide.title}</h1>
+      <p class="muted">{guide.summary}</p>
+      <span class:list={['fresh', stale && 'stale']} data-pagefind-ignore>
+        {stale ? `${d.article.rechecking} ${formatDate(guide.lastChecked, lang)}` : `✓ ${d.article.checked} ${formatDate(guide.lastChecked, lang)}`}
+      </span>
+    </div>
+
+    {guide.tldr && (
+      <dl class="tldr">
+        <div><dt>{d.article.who}</dt><dd>{guide.tldr.who}</dd></div>
+        <div><dt>{d.article.cost}</dt><dd>{guide.tldr.cost}</dd></div>
+        <div><dt>{d.article.where}</dt><dd>{guide.tldr.where}</dd></div>
+        {guide.tldr.time && <div><dt>{d.article.time}</dt><dd>{guide.tldr.time}</dd></div>}
+      </dl>
+    )}
+
+    <div class="prose"><Content /></div>
+
+    <aside class="sources">
+      <b>{d.article.sources}</b>
+      <ul>{guide.sources.map((s) => <li><a href={s.url} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </aside>
+
+    <div class="toolbar" data-pagefind-ignore>
+      <button class="btn ghost" type="button" data-share data-copied={d.article.copied}>{d.article.share}</button>
+      <a class="btn ghost" href={`${href(lang, '/about/')}?page=${encodeURIComponent(href(lang, path))}#contact`}>{d.article.report}</a>
+    </div>
+    <p class="disclaimer" data-pagefind-ignore>{d.article.disclaimer}</p>
+  </article>
+  <script>
+    import { wireShare } from '../../../lib/client';
+    wireShare();
+  </script>
+</Base>

@@ -1,0 +1,36 @@
+---
+import Base from '../../layouts/Base.astro';
+import { t, langPaths, type Lang } from '../../i18n';
+
+export const getStaticPaths = langPaths;
+const lang = Astro.params.lang as Lang;
+const a = t(lang).about;
+---
+<Base lang={lang} path="/about/" title={a.metaTitle} description={a.metaDescription}>
+  <div class="wrap narrow">
+    <div class="article-head">
+      <div class="eyebrow">{a.eyebrow}</div>
+      <h1>{a.title}</h1>
+    </div>
+    <div class="prose">
+      <p>{a.intro}</p>
+      <h2>{a.howTitle}</h2>
+      <ul>{a.how.map((h) => <li><b>{h.b}</b> {h.text}</li>)}</ul>
+      <h2 id="contact">{a.contactTitle}</h2>
+      <p>{a.contactLead}</p>
+    </div>
+    <form class="stack" name="contact" method="POST" action="/thanks/" data-netlify="true" netlify-honeypot="bot-field" style="padding-block:16px 48px">
+      <input type="hidden" name="form-name" value="contact" />
+      <input type="hidden" name="language" value={lang} />
+      <p class="hp"><label>Leave this empty <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
+      <div class="field"><label for="c-page">{a.page}</label><input id="c-page" name="page" type="text" /></div>
+      <div class="field"><label for="c-msg">{a.message}</label><textarea id="c-msg" name="message" required></textarea></div>
+      <div class="field"><label for="c-email">{a.email}</label><input id="c-email" name="email" type="email" autocomplete="email" inputmode="email" /></div>
+      <button class="btn" type="submit" style="justify-self:start">{a.send}</button>
+    </form>
+  </div>
+  <script>
+    const p = new URLSearchParams(location.search).get('page');
+    if (p) (document.getElementById('c-page') as HTMLInputElement).value = p;
+  </script>
+</Base>
