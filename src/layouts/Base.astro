@@ -1,0 +1,162 @@
+---
+import '../styles/global.css';
+import Icon from '../components/Icon.astro';
+import { SITE, NAV, DESKTOP_NAV, EMERGENCY } from '../data/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  type?: 'website' | 'article';
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
+  noindex?: boolean;
+}
+const { title, description = SITE.description, type = 'website', jsonLd, noindex = false } = Astro.props;
+const fullTitle = title ? `${title} · ${SITE.name}` : `${SITE.name}: ${SITE.tagline}`;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL('/og-default.png', Astro.site);
+const path = Astro.url.pathname;
+const isActive = (href: string) => (href === '/' ? path === '/' : path.startsWith(href));
+const googleVerify = import.meta.env.PUBLIC_GOOGLE_SITE_VERIFICATION;
+const bingVerify = import.meta.env.PUBLIC_BING_SITE_VERIFICATION;
+
+const siteLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: SITE.name,
+  url: Astro.site?.toString(),
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: `${new URL('/search/', Astro.site)}?q={search_term_string}`,
+    'query-input': 'required name=search_term_string',
+  },
+};
+const ld = [siteLd, ...(jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [])];
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>{fullTitle}</title>
+  <meta name="description" content={description} />
+  <link rel="canonical" href={canonical} />
+  {noindex && <meta name="robots" content="noindex" />}
+  <meta name="theme-color" content="#262062" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="sitemap" href="/sitemap-index.xml" />
+  <link rel="alternate" type="application/rss+xml" title={`${SITE.name} news`} href="/rss.xml" />
+  <meta property="og:site_name" content={SITE.name} />
+  <meta property="og:type" content={type} />
+  <meta property="og:title" content={title ?? SITE.name} />
+  <meta property="og:description" content={description} />
+  <meta property="og:url" content={canonical} />
+  <meta property="og:image" content={ogImage} />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
+  {googleVerify && <meta name="google-site-verification" content={googleVerify} />}
+  {bingVerify && <meta name="msvalidate.01" content={bingVerify} />}
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chonburi&family=Anuphan:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" />
+  <script type="application/ld+json" set:html={JSON.stringify(ld)} />
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="header" id="site-header">
+    <div class="wrap header-row">
+      <a class="logo" href="/" aria-label={`${SITE.name} home`}>
+        <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="15" fill="#f1efff" /><circle cx="16" cy="16" r="8" fill="#e39b17" /></svg>
+        All About Thailand
+      </a>
+      <nav aria-label="Main">
+        <ul class="top-nav">
+          {DESKTOP_NAV.map((n) => <li><a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>{n.label}</a></li>)}
+        </ul>
+      </nav>
+      <a class="icon-btn" href="/search/" aria-label="Search"><Icon name="search" /></a>
+    </div>
+  </header>
+
+  <main id="main" data-pagefind-body={noindex ? undefined : ''}>
+    <slot />
+  </main>
+
+  <footer class="footer">
+    <div class="wrap">
+      <div class="foot-grid">
+        <div><b>Guides</b><ul>
+          <li><a href="/guides/visa-exemption/">Visa exemption</a></li>
+          <li><a href="/guides/tdac-arrival-card/">TDAC arrival card</a></li>
+          <li><a href="/guides/destination-thailand-visa/">DTV visa</a></li>
+          <li><a href="/guides/retirement-visa/">Retirement visa</a></li>
+        </ul></div>
+        <div><b>Explore</b><ul>
+          <li><a href="/visit/">Regions</a></li>
+          <li><a href="/calendar/">Holidays &amp; festivals</a></li>
+          <li><a href="/news/">News</a></li>
+          <li><a href="/rss.xml">RSS feed</a></li>
+        </ul></div>
+        <div><b>Essentials</b><ul>
+          <li><a href="/essentials/#sos">Emergency numbers</a></li>
+          <li><a href="/essentials/#converter">Currency converter</a></li>
+          <li><a href="/essentials/#driver">Show to driver</a></li>
+          <li><a href="/essentials/#phrases">Thai phrases</a></li>
+        </ul></div>
+        <div><b>About</b><ul>
+          <li><a href="/about/">About &amp; sources</a></li>
+          <li><a href="/about/#contact">Report a correction</a></li>
+          <li><a href="/privacy/">Privacy</a></li>
+        </ul></div>
+      </div>
+      <p class="legal">© {new Date().getFullYear()} {SITE.name}. General information only, not legal advice. Always confirm visa and legal matters with the Immigration Bureau or a Thai embassy.</p>
+    </div>
+  </footer>
+
+  <nav class="bottom-nav" aria-label="Quick">
+    <ul>
+      {NAV.map((n) => (
+        <li><a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}><Icon name={n.icon} />{n.label}</a></li>
+      ))}
+    </ul>
+  </nav>
+
+  <button class="sos-fab" type="button" id="sos-open" aria-haspopup="dialog" aria-controls="sos-sheet">SOS</button>
+  <dialog class="sheet" id="sos-sheet" aria-labelledby="sos-title">
+    <div class="sheet-inner">
+      <div class="sheet-head">
+        <h2 id="sos-title" style="font-size:1.3rem">Emergency numbers</h2>
+        <button class="close-btn" type="button" id="sos-close" aria-label="Close">×</button>
+      </div>
+      <div class="call-list">
+        {EMERGENCY.map((e) => (
+          <a class="call" href={`tel:${e.number}`}><span><b>{e.label}</b><small>{e.note}</small></span><span class="num">{e.number}</span></a>
+        ))}
+      </div>
+      <p class="muted" style="font-size:.88rem">Tap a number to call. Free from any phone in Thailand.</p>
+    </div>
+  </dialog>
+
+  <script>
+    const sheet = document.getElementById('sos-sheet') as HTMLDialogElement | null;
+    document.getElementById('sos-open')?.addEventListener('click', () => sheet?.showModal());
+    document.getElementById('sos-close')?.addEventListener('click', () => sheet?.close());
+    sheet?.addEventListener('click', (e) => { if (e.target === sheet) sheet.close(); });
+
+    // Hide the header while scrolling down on small screens.
+    const header = document.getElementById('site-header');
+    let lastY = window.scrollY;
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY;
+      if (window.innerWidth < 900) header?.classList.toggle('hide', y > lastY && y > 120);
+      lastY = y;
+    }, { passive: true });
+
+    if ('serviceWorker' in navigator && location.hostname !== 'localhost') {
+      window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>

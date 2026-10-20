@@ -1,0 +1,30 @@
+---
+import Base from '../../layouts/Base.astro';
+import { REGIONS, type Region } from '../../data/regions';
+
+export function getStaticPaths() {
+  return REGIONS.map((r) => ({ params: { region: r.slug }, props: { r } }));
+}
+const { r } = Astro.props as { r: Region };
+---
+<Base title={`${r.name}, Thailand`} description={r.intro}>
+  <article class="wrap narrow">
+    <div class="article-head">
+      <a class="crumb" href="/visit/" data-pagefind-ignore>‹ All regions</a>
+      <h1>{r.name}</h1>
+      <span class="muted" lang="th">{r.thai}</span>
+      <p>{r.intro}</p>
+    </div>
+    <dl class="tldr">
+      <div><dt>Best time</dt><dd>{r.bestTime}</dd></div>
+      <div><dt>Getting there</dt><dd>{r.gateways}</dd></div>
+    </dl>
+    <div class="prose">
+      <h2>Where to go</h2>
+      <ul>{r.places.map((p) => <li><b>{p.name}:</b> {p.why}</li>)}</ul>
+      <h2>Good to know</h2>
+      <ul>{r.tips.map((t) => <li>{t}</li>)}</ul>
+      <p>Before you go, read <a href="/guides/etiquette-and-laws/">Thai etiquette and laws</a> and check upcoming <a href="/calendar/">holidays and festivals</a>.</p>
+    </div>
+  </article>
+</Base>

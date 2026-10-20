@@ -1,0 +1,25 @@
+---
+import Base from '../layouts/Base.astro';
+---
+<Base title="Search" description="Search all guides and news on All About Thailand.">
+  <div class="wrap narrow" data-pagefind-ignore="all">
+    <div class="article-head">
+      <h1>Search</h1>
+      <p class="muted">Search every guide and news story. Try "extend", "TDAC", "retire" or "ATM".</p>
+    </div>
+    <div class="search-wrap" id="search" style="padding-bottom:48px"></div>
+  </div>
+  <link rel="stylesheet" href="/pagefind/pagefind-ui.css" />
+  <script is:inline src="/pagefind/pagefind-ui.js"></script>
+  <script is:inline>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!window.PagefindUI) {
+        document.getElementById('search').textContent = 'Search is available on the published site.';
+        return;
+      }
+      const ui = new PagefindUI({ element: '#search', showSubResults: true, showImages: false, autofocus: true });
+      const q = new URLSearchParams(location.search).get('q');
+      if (q) ui.triggerSearch(q);
+    });
+  </script>
+</Base>

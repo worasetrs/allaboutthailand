@@ -1,0 +1,91 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import TodayPanel from '../components/TodayPanel.astro';
+import NewsItem from '../components/NewsItem.astro';
+import Briefing from '../components/Briefing.astro';
+import { PATHS, EMERGENCY } from '../data/site';
+import { REGIONS } from '../data/regions';
+
+const news = (await getCollection('news')).sort((a, b) => +b.data.publishedAt - +a.data.publishedAt).slice(0, 4);
+const guides = await getCollection('guides');
+const countFor = (p: string) => guides.filter((g) => g.data.path === p).length;
+const firstFor = (p: string) => guides.filter((g) => g.data.path === p).sort((a, b) => a.data.order - b.data.order)[0];
+---
+<Base>
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div>
+        <div class="eyebrow" style="color:var(--saffron)">The practical guide for foreigners</div>
+        <h1>Thailand, explained <em>before</em> you land and after you stay.</h1>
+        <p class="lead">Visas, money, safety, culture and the news that affects foreigners, in plain English, with a link to the official source on every page.</p>
+        <form class="hero-search" role="search" action="/search/" method="get">
+          <label for="hero-q" class="hp">Search the guides</label>
+          <input id="hero-q" name="q" type="search" placeholder="e.g. extend visa exemption" autocomplete="off" />
+          <button type="submit">Search</button>
+        </form>
+        <div class="chips">
+          <a href="/guides/visa-exemption/">30-day visa rule</a>
+          <a href="/guides/tdac-arrival-card/">TDAC arrival card</a>
+          <a href="/guides/90-day-report-and-tm30/">90-day report</a>
+          <a href="/guides/destination-thailand-visa/">DTV visa</a>
+          <a href="/essentials/#driver">Show to driver</a>
+        </div>
+      </div>
+      <TodayPanel />
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="eyebrow">Start here</div><h2>What brings you to Thailand?</h2>
+      <p>Step-by-step guides with documents, offices and costs.</p></div></div>
+      <div class="paths">
+        {Object.entries(PATHS).map(([key, p]) => {
+          const first = firstFor(key);
+          return (
+            <a class="path" href={first ? `/guides/#${key}` : '/guides/'}>
+              <span class="tag-line">{p.tag} · {countFor(key)} {countFor(key) === 1 ? 'guide' : 'guides'}</span>
+              <h3>{p.title}</h3>
+              <p>{p.blurb}</p>
+            </a>
+          );
+        })}
+      </div>
+    </div>
+  </section>
+
+  <section class="block band">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="eyebrow">News for foreigners</div><h2>What changed recently</h2>
+      <p>Only news that affects foreigners, each story linked to its source.</p></div>
+      <a class="more" href="/news/">All news →</a></div>
+      <div class="news-list">{news.map((n) => <NewsItem item={n} />)}</div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="eyebrow">Explore by region</div><h2>Six regions, six different trips</h2></div>
+      <a class="more" href="/visit/">All regions →</a></div>
+      <div class="regions">
+        {REGIONS.map((r) => (
+          <a class="region" href={`/visit/${r.slug}/`}><b>{r.name}</b><span class="th" lang="th">{r.thai}</span><p>{r.places.slice(0, 3).map((p) => p.name).join(' · ')}</p></a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="block band">
+    <div class="wrap">
+      <div class="sec-head"><div><div class="eyebrow">Keep these close</div><h2>Emergency numbers</h2>
+      <p>Free from any phone. The SOS button on every page opens this list.</p></div>
+      <a class="more" href="/essentials/">All essentials →</a></div>
+      <div class="call-list" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+        {EMERGENCY.map((e) => <a class="call" href={`tel:${e.number}`}><span><b>{e.label}</b><small>{e.note}</small></span><span class="num">{e.number}</span></a>)}
+      </div>
+    </div>
+  </section>
+
+  <Briefing />
+</Base>

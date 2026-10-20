@@ -1,0 +1,23 @@
+---
+import Base from '../../layouts/Base.astro';
+import { REGIONS } from '../../data/regions';
+---
+<Base title="Regions of Thailand" description="Bangkok, the North, Isan, Central, East and South: what each region of Thailand offers, when to go and how to get there.">
+  <div class="wrap">
+    <div class="article-head narrow">
+      <div class="eyebrow">Explore</div>
+      <h1>Regions of Thailand</h1>
+      <p class="muted">Thailand has 76 provinces plus Bangkok. Most trips combine two or three of these regions.</p>
+    </div>
+    <div class="regions" style="padding-bottom:48px">
+      {REGIONS.map((r) => (
+        <a class="region" href={`/visit/${r.slug}/`}>
+          <b>{r.name}</b>
+          <span class="th" lang="th">{r.thai}</span>
+          <p>{r.intro}</p>
+          <span class="meta">Best: {r.bestTime.split('.')[0]}</span>
+        </a>
+      ))}
+    </div>
+  </div>
+</Base>

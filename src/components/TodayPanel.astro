@@ -1,0 +1,57 @@
+---
+import { CALENDAR } from '../data/calendar';
+const holidays = CALENDAR.filter((c) => c.holiday).map((c) => ({ date: c.date, name: c.name }));
+---
+<aside class="today" aria-label="Today in Thailand" data-pagefind-ignore>
+  <div class="eyebrow" style="color:var(--on-indigo);opacity:.72">Today in Thailand</div>
+  <div class="row"><span class="k">Date</span><span class="v" id="t-date">–</span></div>
+  <div class="row"><span class="k">USD → THB</span><span class="v" id="t-fx">Loading…</span></div>
+  <div class="row"><span class="k">Bangkok now</span><span class="v" id="t-wx">Loading…</span></div>
+  <div class="row"><span class="k">Air quality BKK</span><span class="v" id="t-aqi">Loading…</span></div>
+  <div class="row"><span class="k">Next public holiday</span><span class="v" id="t-hol">–</span></div>
+  <p class="src">Live data: <a href="https://www.exchangerate-api.com" rel="noopener">Rates by Exchange Rate API</a> · <a href="https://open-meteo.com/" rel="noopener">Open-Meteo</a></p>
+</aside>
+
+<script is:inline define:vars={{ holidays }}>
+(() => {
+  const TZ = 'Asia/Bangkok';
+  const $ = (id) => document.getElementById(id);
+  const now = new Date();
+  const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(now);
+  const y = Number(ymd.slice(0, 4));
+  $('t-date').textContent = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short' }).format(now) + ` ${y} · B.E. ${y + 543}`;
+
+  const next = holidays.find((h) => h.date >= ymd);
+  if (next) {
+    const d = new Date(next.date + 'T12:00:00+07:00');
+    $('t-hol').textContent = new Intl.DateTimeFormat('en-GB', { timeZone: TZ, weekday: 'short', day: 'numeric', month: 'short' }).format(d) + ' · ' + next.name;
+  }
+
+  async function cached(key, url, maxAgeMin) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) { const c = JSON.parse(raw); if (Date.now() - c.t < maxAgeMin * 60000) return c.v; }
+    } catch (e) {}
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(String(r.status));
+    const v = await r.json();
+    try { localStorage.setItem(key, JSON.stringify({ t: Date.now(), v })); } catch (e) {}
+    return v;
+  }
+  const fail = (id) => { $(id).textContent = 'Unavailable right now'; };
+
+  cached('aat-fx', 'https://open.er-api.com/v6/latest/USD', 60)
+    .then((d) => { $('t-fx').textContent = '฿ ' + d.rates.THB.toFixed(2); })
+    .catch(() => fail('t-fx'));
+
+  const WMO = { 0: 'Clear', 1: 'Mostly clear', 2: 'Partly cloudy', 3: 'Cloudy', 45: 'Fog', 48: 'Fog', 51: 'Drizzle', 53: 'Drizzle', 55: 'Drizzle', 61: 'Light rain', 63: 'Rain', 65: 'Heavy rain', 80: 'Showers', 81: 'Showers', 82: 'Heavy showers', 95: 'Thunderstorm', 96: 'Thunderstorm', 99: 'Thunderstorm' };
+  cached('aat-wx', 'https://api.open-meteo.com/v1/forecast?latitude=13.75&longitude=100.50&current=temperature_2m,weather_code&timezone=Asia%2FBangkok', 30)
+    .then((d) => { $('t-wx').textContent = Math.round(d.current.temperature_2m) + '°C · ' + (WMO[d.current.weather_code] || '—'); })
+    .catch(() => fail('t-wx'));
+
+  const band = (a) => a <= 50 ? 'good' : a <= 100 ? 'moderate' : a <= 150 ? 'unhealthy for sensitive groups' : a <= 200 ? 'unhealthy' : 'very unhealthy';
+  cached('aat-aqi', 'https://air-quality-api.open-meteo.com/v1/air-quality?latitude=13.75&longitude=100.50&current=us_aqi,pm2_5&timezone=Asia%2FBangkok', 30)
+    .then((d) => { const a = Math.round(d.current.us_aqi); $('t-aqi').textContent = `AQI ${a} · ${band(a)}`; })
+    .catch(() => fail('t-aqi'));
+})();
+</script>

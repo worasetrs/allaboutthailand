@@ -1,0 +1,14 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { CATEGORY_LABEL } from '../data/site';
+import { formatDate } from '../lib/format';
+interface Props { item: CollectionEntry<'news'> }
+const { item } = Astro.props;
+const d = item.data;
+---
+<a class:list={['news-item', d.severity === 'urgent' && 'urgent']} href={`/news/${item.id}/`} data-category={d.category}>
+  <span class:list={['tag', d.severity !== 'info' && d.severity]}>{d.severity === 'urgent' ? '⚠ ' : ''}{CATEGORY_LABEL[d.category]}</span>
+  <h3>{d.title}</h3>
+  <p>{d.summary}</p>
+  <span class="meta">{formatDate(d.publishedAt)}{d.affects.length > 0 && ` · Affects: ${d.affects.join(', ')}`}</span>
+</a>

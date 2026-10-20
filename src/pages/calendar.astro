@@ -1,0 +1,50 @@
+---
+import Base from '../layouts/Base.astro';
+import { CALENDAR, CALENDAR_SOURCES, SEASONS } from '../data/calendar';
+
+const fmt = (iso: string, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Bangkok', ...o }).format(new Date(iso + 'T12:00:00+07:00'));
+const rows = CALENDAR.map((c) => ({
+  ...c,
+  day: fmt(c.date, { day: 'numeric', month: 'short' }) + (c.end ? '–' + fmt(c.end, { day: 'numeric' }) : ''),
+  sub: fmt(c.date, { weekday: 'short', year: 'numeric' }),
+}));
+const jsonLd = CALENDAR.filter((c) => !c.holiday).map((c) => ({
+  '@context': 'https://schema.org', '@type': 'Event', name: c.name, startDate: c.date,
+  eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode', eventStatus: 'https://schema.org/EventScheduled',
+  location: { '@type': 'Place', name: 'Thailand', address: { '@type': 'PostalAddress', addressCountry: 'TH' } },
+  description: c.note,
+}));
+---
+<Base title="Thai holidays and festivals 2026–2027" description="Thai public holidays and festivals for 2026 and 2027: Loy Krathong, Songkran, Buddhist holy days and substitution days, plus the best season to travel." jsonLd={jsonLd}>
+  <div class="wrap narrow">
+    <div class="article-head">
+      <div class="eyebrow">Calendar</div>
+      <h1>Holidays and festivals</h1>
+      <p class="muted">Government offices, banks and immigration offices close on public holidays. Buddhist holy days move each year with the lunar calendar.</p>
+    </div>
+    <div class="cal-list" id="cal">
+      {rows.map((r) => (
+        <div class="cal-row" data-date={r.end ?? r.date}>
+          <div class="d">{r.day}<small>{r.sub}</small></div>
+          <div>
+            <b>{r.name}</b>
+            <span class:list={['badge', r.holiday ? 'off' : 'fest']}>{r.holiday ? 'Day off' : 'Festival'}</span>
+            {r.note && <p class="muted" style="font-size:.93rem">{r.note}</p>}
+          </div>
+        </div>
+      ))}
+    </div>
+    <section class="block" style="padding-block:32px">
+      <h2 style="margin-bottom:12px">Seasons</h2>
+      <div class="seasons">{SEASONS.map((s) => <div class="season"><b>{s.name}</b><div class="mono">{s.months}</div><p class="muted">{s.note}</p></div>)}</div>
+    </section>
+    <aside class="sources" style="margin-bottom:48px">
+      <b>Sources</b>
+      <ul>{CALENDAR_SOURCES.map((s) => <li><a href={s.url} rel="noopener" target="_blank">{s.name}</a></li>)}</ul>
+    </aside>
+  </div>
+  <script>
+    const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(new Date());
+    document.querySelectorAll<HTMLElement>('#cal [data-date]').forEach((r) => { if ((r.dataset.date ?? '') < today) r.classList.add('past'); });
+  </script>
+</Base>
