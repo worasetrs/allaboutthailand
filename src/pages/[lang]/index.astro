@@ -2,7 +2,6 @@
 import Base from '../../layouts/Base.astro';
 import TodayPanel from '../../components/TodayPanel.astro';
 import NewsCorner from '../../components/NewsCorner.astro';
-import Briefing from '../../components/Briefing.astro';
 import { PATH_KEYS, EMERGENCY_NUMBERS } from '../../data/site';
 import { REGION_SLUGS, REGION_THAI } from '../../data/regions';
 import { t, href, langPaths, type Lang } from '../../i18n';
@@ -80,5 +79,4 @@ const chipLinks = ['/guides/visa-exemption/', '/guides/tdac-arrival-card/', '/gu
     </div>
   </section>
 
-  <Briefing lang={lang} />
 </Base>

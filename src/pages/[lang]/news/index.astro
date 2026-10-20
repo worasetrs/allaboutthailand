@@ -1,7 +1,6 @@
 ---
 import Base from '../../../layouts/Base.astro';
 import NewsItem from '../../../components/NewsItem.astro';
-import Briefing from '../../../components/Briefing.astro';
 import { t, href, langPaths, type Lang } from '../../../i18n';
 import { getNews } from '../../../lib/content';
 
@@ -24,7 +23,6 @@ const cats = [...new Set(news.map((n) => n.category))];
     </div>
     <div class="news-list" id="news-list">{news.map((n) => <NewsItem item={n} lang={lang} />)}</div>
   </div>
-  <Briefing lang={lang} />
   <script>
     const buttons = document.querySelectorAll<HTMLButtonElement>('[data-filter]');
     const items = document.querySelectorAll<HTMLElement>('#news-list [data-category]');

@@ -30,7 +30,7 @@
 | ค้นหา | **Pagefind** | ค้นหาแบบ static ไม่ต้องมี server รองรับหลายภาษา |
 | ข้อมูลสด | Netlify Functions (Scheduled) | ดึงค่าเงิน อากาศ ค่าฝุ่น ทุก 30–60 นาที แล้วเก็บ cache |
 | รูปภาพ | `astro:assets` + Netlify Image CDN | แปลงเป็น AVIF/WebP และย่อขนาดตามจออัตโนมัติ |
-| ฟอร์ม | Netlify Forms | ติดต่อ แจ้งข้อมูลผิด สมัครรับข่าว |
+| ฟอร์ม | Netlify Forms | ติดต่อ แจ้งข้อมูลผิด |
 | Newsletter | Buttondown หรือ Mailchimp | ส่งจาก RSS ของหมวดข่าวได้อัตโนมัติ |
 | Analytics | Plausible หรือ Netlify Analytics | ไม่ใช้ cookie จึงไม่ต้องมี consent banner ที่รกจอมือถือ |
 | Hosting | Netlify + GitHub | push ขึ้น `main` แล้ว deploy อัตโนมัติ, มี preview ทุก PR |
@@ -281,7 +281,7 @@ Collection อื่นๆ ได้แก่ `regions`, `provinces` (พิก�
 ## 9. SEO และการแชร์
 - JSON-LD: `NewsArticle` สำหรับข่าว, `HowTo` และ `FAQPage` สำหรับคู่มือ, `Event` สำหรับเทศกาล
 - สร้าง Open Graph image อัตโนมัติต่อบทความ (ชื่อบทความบนพื้น indigo) ให้แชร์ใน Facebook/LINE แล้วดูดี
-- `sitemap.xml` แยกตามภาษา, RSS ต่อหมวดข่าว (ใช้ส่ง newsletter และโพสต์เพจอัตโนมัติ)
+- `sitemap.xml` แยกตามภาษา, RSS ต่อภาษา (ใช้โพสต์เพจอัตโนมัติได้)
 
 ---
 

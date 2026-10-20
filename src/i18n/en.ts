@@ -51,7 +51,6 @@ const en = {
   },
   guides: { eyebrow: 'Guides', title: 'Guides for foreigners in Thailand', lead: 'Each guide lists its official sources and the date we last checked it.', metaDescription: 'Step-by-step guides for foreigners in Thailand: visas, arrival, money, healthcare, renting, retirement and etiquette.' },
   news: { eyebrow: 'News', title: 'News for foreigners in Thailand', lead: 'Rule changes, advisories and events, explained with what they mean for you.', all: 'All', rss: 'RSS feed', metaDescription: 'Thailand news that affects foreigners: visa rules, travel advisories, economy and events, each linked to its source.' },
-  briefing: { eyebrow: 'Weekly briefing', title: 'Thailand this week, in five minutes', lead: 'Rule changes, events and one useful Thai phrase, every Friday. Unsubscribe any time.', email: 'Email address', subscribe: 'Subscribe' },
   regions: {
     eyebrow: 'Explore', title: 'Regions of Thailand', lead: 'Thailand has 76 provinces plus Bangkok. Most trips combine two or three of these regions.',
     best: 'Best', bestTime: 'Best time', gettingThere: 'Getting there', whereToGo: 'Where to go', goodToKnow: 'Good to know', all: '‹ All regions',
@@ -207,7 +206,7 @@ const en = {
     title: 'Privacy', metaDescription: 'What data All About Thailand collects and why.',
     items: [
       { b: 'No tracking cookies.', text: 'We do not use advertising or tracking cookies. We save your language choice in a small cookie.' },
-      { b: 'Forms.', text: 'If you subscribe or contact us, we store your email and message with our host, Netlify, only to reply or to send the briefing. Ask us to delete it at any time using the contact form.' },
+      { b: 'Forms.', text: 'If you contact us, we store your message (and email, if you give one) with our host, Netlify, only to reply. Ask us to delete it at any time using the contact form.' },
       { b: 'Your device.', text: 'Currency rates, weather and the address you type into “Show to driver” are saved only in your own browser so the tools work offline. They are never sent to us.' },
       { b: 'Third-party data.', text: 'Your browser loads exchange rates from Exchange Rate API, weather and air quality from Open-Meteo, and fonts from Google Fonts.' },
     ],
